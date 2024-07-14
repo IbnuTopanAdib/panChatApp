@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "57053569309",
+    "project_id": "fir-chat-app-7879e",
+    "storage_bucket": "fir-chat-app-7879e.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:57053569309:android:26237ecd3e5083f5ab81f4",
+        "android_client_info": {
+          "package_name": "com.example.p"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAx7c3EB_lD1ydzwfiCAIkgFgCTvZ-Dh9Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:57053569309:android:cfac691ed0486212ab81f4",
+        "android_client_info": {
+          "package_name": "com.example.panchatapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAx7c3EB_lD1ydzwfiCAIkgFgCTvZ-Dh9Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
