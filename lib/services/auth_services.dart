@@ -2,7 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthServices {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
-  AuthServices();
+  AuthServices() {
+    _firebaseAuth.authStateChanges().listen(authStateChangesStreamListener);
+  }
   User? _user;
 
   User? get user {
@@ -21,5 +23,23 @@ class AuthServices {
       print(e);
     }
     return false;
+  }
+
+  Future<bool> logout() async {
+    try {
+      await _firebaseAuth.signOut();
+      return true;
+    } catch (e) {
+      print(e);
+    }
+    return false;
+  }
+
+  void authStateChangesStreamListener(User? user) {
+    if (user != null) {
+      _user = user;
+    } else {
+      _user = null;
+    }
   }
 }

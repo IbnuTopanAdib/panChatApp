@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:panchatapp/consts.dart';
+import 'package:panchatapp/services/alert_services.dart';
 import 'package:panchatapp/services/auth_services.dart';
+import 'package:panchatapp/services/navigation_services.dart';
 import 'package:panchatapp/widgets/custom_formfield.dart';
 import 'package:get_it/get_it.dart';
 
@@ -16,12 +18,16 @@ class _LoginPageState extends State<LoginPage> {
   final GlobalKey<FormState> _loginFormKey = GlobalKey();
   String? email, password;
   late AuthServices _authServices;
+  late NavigationServices _navigationServices;
+  late AlertServices _alertServices;
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     _authServices = _getIt.get<AuthServices>();
+    _navigationServices = _getIt.get<NavigationServices>();
+    _alertServices = _getIt.get<AlertServices>();
   }
 
   @override
@@ -117,7 +123,11 @@ class _LoginPageState extends State<LoginPage> {
           if (_loginFormKey.currentState?.validate() ?? false) {
             _loginFormKey.currentState?.save();
             bool result = await _authServices.login(email!, password!);
-            if (result) {}else{}
+            if (result) {
+              _navigationServices.pushReplacementNamed("/home");
+            } else {
+              _alertServices.showToast(text: "Failed to login!", icon: Icons.error);
+            }
           }
         },
         color: Theme.of(context).colorScheme.primary,
