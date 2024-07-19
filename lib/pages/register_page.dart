@@ -1,33 +1,42 @@
-import 'package:flutter/material.dart';
-import 'package:panchatapp/consts.dart';
-import 'package:panchatapp/services/alert_services.dart';
-import 'package:panchatapp/services/auth_services.dart';
-import 'package:panchatapp/services/navigation_services.dart';
-import 'package:panchatapp/widgets/custom_formfield.dart';
-import 'package:get_it/get_it.dart';
+import 'dart:io';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:get_it/get_it.dart';
+import 'package:panchatapp/consts.dart';
+import 'package:panchatapp/services/auth_services.dart';
+import 'package:panchatapp/services/media_services.dart';
+import 'package:panchatapp/services/navigation_services.dart';
+import 'package:panchatapp/services/storage_services.dart';
+import 'package:panchatapp/widgets/custom_formfield.dart';
+
+class RegisterPage extends StatefulWidget {
+  const RegisterPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _RegisterPageState extends State<RegisterPage> {
   final GetIt _getIt = GetIt.instance;
-  final GlobalKey<FormState> _loginFormKey = GlobalKey();
-  String? email, password;
-  late AuthServices _authServices;
+  late MediaServices _mediaServices;
   late NavigationServices _navigationServices;
-  late AlertServices _alertServices;
+  late AuthServices _authServices;
+  late StorageServices _storageServices;
+  File? selectedImage;
+  String? email, password, name;
+  final GlobalKey<FormState> _registerFormKey = GlobalKey();
+  bool isLoading = false;
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    _authServices = _getIt.get<AuthServices>();
+    _mediaServices = _getIt.get<MediaServices>();
     _navigationServices = _getIt.get<NavigationServices>();
-    _alertServices = _getIt.get<AlertServices>();
+    _authServices = _getIt.get<AuthServices>();
+    _storageServices = _getIt.get<StorageServices>();
   }
 
   @override
@@ -45,8 +54,13 @@ class _LoginPageState extends State<LoginPage> {
       child: Column(
         children: [
           _headerText(context),
-          _loginForm(context),
-          _createAccountLink(context)
+          if (!isLoading) _registerForm(context),
+          if (!isLoading) _loginAccountLink(context),
+          if (isLoading)
+            Expanded(
+                child: Center(
+              child: CircularProgressIndicator(),
+            ))
         ],
       ),
     ));
@@ -61,11 +75,11 @@ class _LoginPageState extends State<LoginPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Hi Welcome back!",
+            "Let's get going!",
             style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
           ),
           Text(
-            "Hello again!, yo have been missed",
+            "Register an account using the following form",
             style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
@@ -76,18 +90,29 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _loginForm(BuildContext context) {
+  Widget _registerForm(BuildContext context) {
     return Container(
-      height: MediaQuery.sizeOf(context).height * 0.40,
+      height: MediaQuery.sizeOf(context).height * 0.60,
       margin: EdgeInsets.symmetric(
           vertical: MediaQuery.sizeOf(context).height * 0.05),
       child: Form(
-          key: _loginFormKey,
+          key: _registerFormKey,
           child: Column(
             mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _ppSelectionField(context),
+              CustomFormField(
+                hintText: "Name",
+                height: MediaQuery.sizeOf(context).height * 0.1,
+                validationRegex: NAME_VALIDATION_REGEX,
+                onSaved: (value) {
+                  setState(() {
+                    name = value;
+                  });
+                },
+              ),
               CustomFormField(
                 hintText: "Email",
                 height: MediaQuery.sizeOf(context).height * 0.1,
@@ -109,51 +134,77 @@ class _LoginPageState extends State<LoginPage> {
                   });
                 },
               ),
-              _loginButton(context)
+              _registerButton(context)
             ],
           )),
     );
   }
 
-  Widget _loginButton(BuildContext context) {
+  Widget _registerButton(BuildContext context) {
     return SizedBox(
       width: MediaQuery.sizeOf(context).width,
       child: MaterialButton(
         onPressed: () async {
-          if (_loginFormKey.currentState?.validate() ?? false) {
-            _loginFormKey.currentState?.save();
-            bool result = await _authServices.login(email!, password!);
-            if (result) {
-              _navigationServices.pushReplacementNamed("/home");
-            } else {
-              _alertServices.showToast(
-                  text: "Failed to login!", icon: Icons.error);
+          setState(() {
+            isLoading = true;
+          });
+          try {
+            if ((_registerFormKey.currentState?.validate() ?? false) &&
+                selectedImage != null) {
+              _registerFormKey.currentState?.save();
+              bool result = await _authServices.signUp(email!, password!);
+              if (result) {
+                String? ppURL = await _storageServices.uploadUserpp(
+                    file: selectedImage!, uid: _authServices.user!.uid);
+              }
             }
+          } catch (e) {
+            print(e);
           }
+          setState(() {
+            isLoading = false;
+          });
         },
         color: Theme.of(context).colorScheme.primary,
         child: Text(
-          "Login",
+          "Register",
           style: TextStyle(color: Colors.white30),
         ),
       ),
     );
   }
 
-  Widget _createAccountLink(BuildContext context) {
+  Widget _ppSelectionField(BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        File? file = await _mediaServices.getImageFromGallery();
+        if (file != null) {
+          selectedImage = file;
+        }
+      },
+      child: CircleAvatar(
+        radius: MediaQuery.of(context).size.width * 0.15,
+        backgroundImage: selectedImage != null
+            ? FileImage(selectedImage!)
+            : NetworkImage(PLACEHOLDER_PFP) as ImageProvider,
+      ),
+    );
+  }
+
+  Widget _loginAccountLink(BuildContext context) {
     return Expanded(
         child: Row(
       mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Text("don't have an account",
+        Text("do have an account?",
             style: TextStyle(color: Theme.of(context).colorScheme.primary)),
         InkWell(
           onTap: () {
-            _navigationServices.pushNamed('/register');
+            _navigationServices.goBack();
           },
-          child: Text("Sign up",
+          child: Text("Login",
               style: TextStyle(
                   color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.w700)),
